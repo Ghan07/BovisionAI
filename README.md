@@ -44,7 +44,7 @@ npm run dev
 ### Demo Account
 After seeding: `demo@example.com` / `password123`
 
-### URL - bovisionai.vercel.app
+### URL - [bovisionai.vercel.app](https://bovisionai.vercel.app/)
 
 ## API Endpoints
 
