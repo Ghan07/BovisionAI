@@ -44,10 +44,7 @@ npm run dev
 ### Demo Account
 After seeding: `demo@example.com` / `password123`
 
-### URLs
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:5000
-- Health check: http://localhost:5000/api/health
+### URL - bovisionai.vercel.app
 
 ## API Endpoints
 
