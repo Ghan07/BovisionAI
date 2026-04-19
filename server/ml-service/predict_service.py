@@ -22,7 +22,7 @@ import tensorflow as tf  # noqa: E402
 app = Flask(__name__)
 
 # ── Model loading (once at startup) ───────────────────────────────────────────
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "bovision_ai_classifier.keras")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "bovision_ai_classifier.h5")
 CLASS_NAMES = ["buffalo", "cow"]  # index 0 → buffalo, index 1 → cow
 
 print(f"[ml-service] Loading model from {MODEL_PATH} …")
