@@ -30,7 +30,9 @@ export const createClassification = async (req, res, next) => {
       user: req.user._id,
     });
 
-    const { measurements, atcResult, processingTime } = await classifyAnimal(image);
+    // Pass image buffer (from multer memoryStorage) + Cloudinary URL to engine
+    const imageForML = { ...image.toObject(), buffer: req.file.buffer };
+    const { measurements, atcResult, processingTime } = await classifyAnimal(imageForML);
 
     let animal = null;
     if (req.body.animalTag) {

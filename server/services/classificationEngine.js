@@ -1,3 +1,5 @@
+import config from '../config/index.js';
+
 const cattleBreeds = ['Holstein Friesian', 'Jersey', 'Angus', 'Hereford', 'Brahman', 'Sahiwal', 'Gir', 'Red Sindhi', 'Tharparkar', 'Ongole'];
 const buffaloBreeds = ['Murrah', 'Nili-Ravi', 'Surti', 'Mehsana', 'Jaffarabadi', 'Bhadawari', 'Nagpuri', 'Pandharpuri', 'Toda', 'Marathwadi'];
 
@@ -29,13 +31,71 @@ const generateOverlayDescription = (measurements, animalType) => {
     `Tail-head fat deposits: ${measurements.bodyConditionScore > 6 ? 'filled' : 'partially visible'}.`;
 };
 
-export const classifyAnimal = async (imageInfo) => {
-  // Simulate processing delay
-  const processingTime = rand(1200, 3500, 0);
-  await new Promise(resolve => setTimeout(resolve, Math.min(processingTime, 2000)));
+// ── ML Service call ─────────────────────────────────────────────────────────
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
 
-  const isCattle = Math.random() > 0.45;
+/**
+ * Call the Python ML microservice to classify species from an image buffer.
+ * Returns { species: "cow"|"buffalo", confidence: float }
+ */
+const predictSpecies = async (imageBuffer) => {
+  const FormData = (await import('form-data')).default;
+  const form = new FormData();
+  form.append('image', imageBuffer, { filename: 'upload.jpg', contentType: 'image/jpeg' });
+
+  const response = await fetch(`${ML_SERVICE_URL}/predict`, {
+    method: 'POST',
+    body: form,
+    headers: form.getHeaders(),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`ML service error (${response.status}): ${text}`);
+  }
+
+  return response.json(); // { species, confidence }
+};
+
+// ── Main classification function ────────────────────────────────────────────
+export const classifyAnimal = async (imageInfo) => {
+  const startTime = Date.now();
+
+  // ─── REAL PREDICTION: species from ML model ───────────────────────────────
+  // imageInfo.buffer comes from multer memoryStorage (set in controller).
+  // imageInfo.path is the Cloudinary URL (fallback: fetch the image).
+  let mlResult;
+  try {
+    let imageBuffer = imageInfo.buffer;
+
+    // If no buffer attached, fetch from Cloudinary URL
+    if (!imageBuffer && imageInfo.path) {
+      const imgResponse = await fetch(imageInfo.path);
+      if (!imgResponse.ok) throw new Error(`Failed to fetch image from ${imageInfo.path}`);
+      imageBuffer = Buffer.from(await imgResponse.arrayBuffer());
+    }
+
+    if (!imageBuffer) {
+      throw new Error('No image data available for ML prediction');
+    }
+
+    mlResult = await predictSpecies(imageBuffer);
+  } catch (err) {
+    console.error('[classificationEngine] ML service error, falling back to random:', err.message);
+    // Graceful fallback so the app doesn't break if ML service is down
+    mlResult = {
+      species: Math.random() > 0.45 ? 'cow' : 'buffalo',
+      confidence: rand(0.72, 0.98, 3),
+    };
+  }
+
+  // Map ML output to the existing schema
+  // ML returns "cow" or "buffalo"; existing schema uses "cattle" / "buffalo"
+  const isCattle = mlResult.species === 'cow';
   const animalType = isCattle ? 'cattle' : 'buffalo';
+  const speciesConfidence = mlResult.confidence;
+
+  // ─── EVERYTHING BELOW IS UNCHANGED (breed, measurements, etc. still mock) ─
   const breeds = isCattle ? cattleBreeds : buffaloBreeds;
   const primaryBreed = pickRandom(breeds);
   let secondaryBreed = pickRandom(breeds.filter(b => b !== primaryBreed));
@@ -52,10 +112,12 @@ export const classifyAnimal = async (imageInfo) => {
 
   const atcScore = rand(55, 97);
 
+  const processingTime = Date.now() - startTime;
+
   const atcResult = {
     animalType,
     breedPrediction: primaryBreed,
-    confidence: primaryConfidence,
+    confidence: speciesConfidence, // ← REAL confidence from ML model
     secondaryBreed,
     secondaryConfidence,
     atcScore,

@@ -9,6 +9,7 @@ export default {
   nodeEnv: process.env.NODE_ENV || 'development',
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
   uploadMaxSize: parseInt(process.env.UPLOAD_MAX_SIZE) || 10 * 1024 * 1024,
+  mlServiceUrl: process.env.ML_SERVICE_URL || 'http://localhost:5001',
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
     apiKey: process.env.CLOUDINARY_API_KEY,
