@@ -26,9 +26,12 @@ MODEL_PATH = os.path.join(os.path.dirname(__file__), "bovision_ai_classifier.ker
 CLASS_NAMES = ["buffalo", "cow"]  # index 0 → buffalo, index 1 → cow
 
 print(f"[ml-service] Loading model from {MODEL_PATH} …")
-model = tf.keras.models.load_model(MODEL_PATH)
-print(f"[ml-service] Model loaded. Input shape: {model.input_shape}")
-
+try:
+    model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+    print(f"[ml-service] Model loaded. Input shape: {model.input_shape}")
+except Exception as e:
+    print("[ml-service] Model failed to load:", str(e))
+    model = None
 
 # ── Prediction endpoint ──────────────────────────────────────────────────────
 @app.route("/predict", methods=["POST"])
