@@ -3,6 +3,7 @@ services:
     name: breedai-api
     runtime: node
     plan: free
+    rootDir: server   # ✅ ADD THIS LINE
     buildCommand: npm install
     startCommand: node server.js
     envVars:
